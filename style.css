@@ -1,0 +1,153 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+#map {
+  height: 400px;
+}
+
+#button-group {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+#button-group button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s;
+}
+
+#button-group button:hover {
+  background-color: #0056b3;
+  cursor: pointer;
+}
+
+#button-group button:active {
+  background-color: #003466;
+}
+
+#button-group button i {
+  margin-right: 5px;
+}
+
+#button-group button:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background-image: url('water-droplet.png'); /* Replace with the path to your water droplet image */
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#button-group button:hover:before,
+#button-group button:active:before {
+  opacity: 1;
+}
+
+#powered-by-esri {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border-radius: 5px;
+  font-size: 12px;
+  backdrop-filter: blur(5px);
+}
+
+.esri-attribution__sources,
+.esri-attribution__powered-by {
+  display: none;
+}
+
+button{
+      --calcite-animation-timing: 300ms;
+    --calcite-popper-transition: 150ms ease-in-out;
+    --calcite-code-family: "Consolas", "Andale Mono", "Lucida Console", "Monaco", "monospace";
+    --calcite-sans-family: "Avenir Next", "Avenir", "Helvetica Neue", "sans-serif";
+    --calcite-font-size--3: 0.625rem;
+    --calcite-font-size--2: 0.75rem;
+    --calcite-font-size--1: 0.875rem;
+    --calcite-font-size-0: 1rem;
+    --calcite-font-size-1: 1.125rem;
+    --calcite-font-size-2: 1.25rem;
+    --calcite-font-size-3: 1.625rem;
+    --calcite-font-size-4: 2rem;
+    --calcite-font-size-5: 2.5rem;
+    --calcite-font-size-6: 3rem;
+    --calcite-font-size-7: 3.5rem;
+    --calcite-font-size-8: 4rem;
+    --calcite-font-weight-light: 300;
+    --calcite-font-weight-normal: 400;
+    --calcite-font-weight-medium: 500;
+    --calcite-font-weight-bold: 700;
+    --calcite-ui-brand: #007ac2;
+    --calcite-ui-brand-hover: #00619B;
+    --calcite-ui-brand-press: #004874;
+    --calcite-ui-background: #f8f8f8;
+    --calcite-ui-foreground-1: #ffffff;
+    --calcite-ui-foreground-2: #f3f3f3;
+    --calcite-ui-foreground-3: #eaeaea;
+    --calcite-ui-text-1: #151515;
+    --calcite-ui-text-2: #4a4a4a;
+    --calcite-ui-text-3: #6a6a6a;
+    --calcite-ui-text-inverse: #FFFFFF;
+    --calcite-ui-text-link: #00619b;
+    --calcite-ui-border-1: #cacaca;
+    --calcite-ui-border-2: #d4d4d4;
+    --calcite-ui-border-3: #dfdfdf;
+    --calcite-ui-border-input: #949494;
+    --calcite-ui-info: #00619b;
+    --calcite-ui-success: #35ac46;
+    --calcite-ui-warning: #edd317;
+    --calcite-ui-danger: #D83020;
+    --calcite-ui-danger-hover: #A82B1E;
+    --calcite-ui-danger-press: #7C1D13;
+    --calcite-theme-name: "light";
+    --calcite-ui-foreground-current: #c7eaff;
+    --calcite-ui-inverse: #353535;
+    --calcite-ui-inverse-hover: #2b2b2b;
+    --calcite-ui-inverse-press: #202020;
+    --calcite-alert-dismiss-progress-background: rgba(255, 255, 255, 0.8);
+    --calcite-button-transparent-hover: rgba(0, 0, 0, 0.05);
+    --calcite-button-transparent-press: rgba(0, 0, 0, 0.08);
+    --calcite-link-blue-underline: rgba(0, 97, 155, 0.4);
+    --calcite-scrim-background: rgba(255, 255, 255, 0.75);
+    -webkit-font-smoothing: antialiased;
+    --calcite-border-radius: 4px;
+    --calcite-ui-opacity-disabled: 0.5;
+    --calcite-panel-width-multiplier: 1;
+    --esri-calcite-theme-name: "light";
+    font-size: 14px;
+    display: inline-block;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #0079c1 !important;
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+    border: none;
+    cursor: pointer;
+}

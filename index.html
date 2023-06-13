@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Distance Calculator</title>
+  <style>
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    #container {
+      position: absolute;
+      z-index: 1;
+      width: 380px;
+      top: 20px;
+      left: 20px;
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    #inputs {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+
+    .input-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .input-field {
+      margin-bottom: 10px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+
+    #buttons {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .button {
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+    }
+
+    .button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    #calculationHistory {
+      margin-top: 20px;
+      padding: 0;
+      list-style-type: none;
+    }
+
+    #calculationHistory li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      padding: 5px;
+      background-color: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    #calculationHistory li:hover {
+      background-color: #e1e1e1;
+    }
+
+    #calculationHistory li .result {
+      margin-left: auto;
+      font-weight: bold;
+    }
+
+    #context-menu {
+      position: absolute;
+      display: none;
+      z-index: 2;
+      list-style-type: none;
+      background-color: #fff;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    #context-menu.visible {
+      display: block;
+    }
+
+    #context-menu li {
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    #footer {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 12px;
+    }
+
+    #footer a {
+      color: #4caf50;
+      text-decoration: none;
+    }
+  </style>
+  <script src="https://unpkg.com/@iconify/iconify@3.1.0"></script>
+  <script src="https://js.arcgis.com/4.21/"></script>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div id="container">
+    <div id="inputs">
+      <label for="pointA" class="input-label">Point A (Latitude, Longitude):</label>
+      <input type="text" id="pointA" class="input-field" placeholder="Enter coordinates">
+      <label for="pointB" class="input-label">Point B (Latitude, Longitude):</label>
+      <input type="text" id="pointB" class="input-field" placeholder="Enter coordinates">
+    </div>
+    <div id="buttons">
+      <button id="calculateButton" class="button"><span class="iconify" data-icon="uil:calculator"></span> Calculate</button>
+      <div>
+        <button id="visualizeButton" class="button" disabled><span class="iconify" data-icon="uil:map"></span> Visualize</button>
+        <button id="visualizeHistoryButton" class="button" disabled><span class="iconify" data-icon="uil:history"></span> Visualize History</button>
+        <button id="zoomInButton" class="button" disabled><span class="iconify" data-icon="uil:zoom-in"></span> Zoom In</button>
+        <button id="zoomOutButton" class="button" disabled><span class="iconify" data-icon="uil:zoom-out"></span> Zoom Out</button>
+      </div>
+    </div>
+    <div id="result"></div>
+    <ul id="calculationHistory"></ul>
+    <ul id="context-menu">
+      <li id="copy-geolocation-option">Copy Geolocation</li>
+      <li id="copy-coordinates-option">Copy Coordinates</li>
+    </ul>
+  </div>
+  <div id="footer">
+    Output link: <a id="outputLink" href="#" target="_blank"></a>
+  </div>
+
+  <script>
+    var map;
+    var view;
+    var graphicsLayer;
+    var calculationHistory = [];
+
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/Graphic",
+      "esri/geometry/Polyline",
+      "esri/geometry/geometryEngine",
+      "esri/layers/GraphicsLayer"
+    ], function (Map, MapView, Graphic, Polyline, geometryEngine, GraphicsLayer) {
+      map = new Map({
+        basemap: "oceans"
+      });
+
+      view = new MapView({
+        container: "map",
+        map: map,
+        center: [0, 0],
+        zoom: 1
+      });
+
+      graphicsLayer = new GraphicsLayer();
+      map.add(graphicsLayer);
+
+      view.on("pointer-move", function (event) {
+        var screenPoint = {
+          x: event.x,
+          y: event.y
+        };
+
+        view.hitTest(screenPoint).then(function (response) {
+          var hitResult = response.results[0];
+
+          if (hitResult && hitResult.graphic) {
+            var attributes = hitResult.graphic.attributes;
+            var longitude = attributes.longitude.toFixed(4);
+            var latitude = attributes.latitude.toFixed(4);
+            hitResult.graphic.symbol.color = "#FFFF00"; // Yellow color on hover
+            hitResult.graphic.symbol.outline.color = "#000000"; // Black outline on hover
+            hitResult.graphic.symbol.outline.width = 2;
+            hitResult.graphic.symbol.outline.style = "solid";
+            hitResult.graphic.symbol.outline.cap = "round";
+            hitResult.graphic.symbol.outline.join = "round";
+            hitResult.graphic.symbol.outline.miterLimit = 1;
+
+            view.popup.open({
+              title: "Location",
+              location: view.toMap({ x: event.x, y: event.y }),
+              content: "Latitude: " + latitude + "<br>Longitude: " + longitude,
+              actions: []
+            });
+          } else {
+            view.popup.close();
+          }
+        });
+      });
+
+      view.on("click", function (event) {
+        var screenPoint = {
+          x: event.x,
+          y: event.y
+        };
+
+        view.hitTest(screenPoint).then(function (response) {
+          var hitResult = response.results[0];
+
+          if (hitResult && hitResult.graphic) {
+            var attributes = hitResult.graphic.attributes;
+            var latitude = attributes.latitude;
+            var longitude = attributes.longitude;
+
+            var copyGeolocationOption = document.getElementById("copy-geolocation-option");
+            var copyCoordinatesOption = document.getElementById("copy-coordinates-option");
+
+            copyGeolocationOption.addEventListener("click", function () {
+              navigator.clipboard.writeText(latitude + ", " + longitude);
+              console.log("Geolocation copied: " + latitude + ", " + longitude);
+            });
+
+            copyCoordinatesOption.addEventListener("click", function () {
+              navigator.clipboard.writeText(longitude + ", " + latitude);
+              console.log("Coordinates copied: " + longitude + ", " + latitude);
+            });
+
+            var contextMenu = document.getElementById("context-menu");
+            contextMenu.style.left = event.x + "px";
+            contextMenu.style.top = event.y + "px";
+            contextMenu.classList.add("visible");
+
+            document.addEventListener("click", function () {
+              contextMenu.classList.remove("visible");
+            }, { once: true });
+          }
+        });
+      });
+
+      function addPointToMap(point, title, content) {
+        graphicsLayer.removeAll();
+
+        var pointGraphic = new Graphic({
+          geometry: point,
+          symbol: {
+            type: "simple-marker",
+            style: "circle",
+            size: 8,
+            color: "#FF0000", // Red color
+            outline: {
+              color: "#000000", // Black outline
+              width: 1,
+              style: "solid",
+              cap: "round",
+              join: "round",
+              miterLimit: 1
+            }
+          },
+          attributes: {
+            title: title,
+            content: content,
+            latitude: point.latitude,
+            longitude: point.longitude
+          },
+          popupTemplate: {
+            title: "{title}",
+            content: "{content}"
+          }
+        });
+
+        graphicsLayer.add(pointGraphic);
+      }
+
+      function calculateDistance() {
+        var pointAInput = document.getElementById("pointA");
+        var pointBInput = document.getElementById("pointB");
+        var pointA = pointAInput.value.trim();
+        var pointB = pointBInput.value.trim();
+
+        if (pointA === "" || pointB === "") {
+          return;
+        }
+
+        var pointALatLon = pointA.split(",");
+        var pointBLatLon = pointB.split(",");
+
+        if (pointALatLon.length !== 2 || pointBLatLon.length !== 2) {
+          return;
+        }
+
+        var pointAGeometry = {
+          type: "point",
+          latitude: parseFloat(pointALatLon[0]),
+          longitude: parseFloat(pointALatLon[1])
+        };
+
+        var pointBGeometry = {
+          type: "point",
+          latitude: parseFloat(pointBLatLon[0]),
+          longitude: parseFloat(pointBLatLon[1])
+        };
+
+        var polylineGeometry = new Polyline({
+          paths: [
+            [pointAGeometry.longitude, pointAGeometry.latitude],
+            [pointBGeometry.longitude, pointBGeometry.latitude]
+          ]
+        });
+
+        var distance = geometryEngine.geodesicLength(polylineGeometry, "kilometers");
+
+        var resultElement = document.getElementById("result");
+        resultElement.innerHTML = "Distance: " + distance.toFixed(2) + " km";
+
+        addPointToMap(pointAGeometry, "Point A", "Latitude: " + pointALatLon[0] + "<br>Longitude: " + pointALatLon[1]);
+        addPointToMap(pointBGeometry, "Point B", "Latitude: " + pointBLatLon[0] + "<br>Longitude: " + pointBLatLon[1]);
+
+        calculationHistory.push({
+          pointA: pointA,
+          pointB: pointB,
+          distance: distance.toFixed(2)
+        });
+
+        updateCalculationHistory();
+        updateOutputLink();
+        enableButtons();
+      }
+
+      function updateCalculationHistory() {
+        var calculationHistoryList = document.getElementById("calculationHistory");
+        calculationHistoryList.innerHTML = "";
+
+        for (var i = calculationHistory.length - 1; i >= 0; i--) {
+          var calculation = calculationHistory[i];
+
+          var listItem = document.createElement("li");
+          listItem.innerHTML = "<span class='result'>" + calculation.distance + " km</span> - Point A: " + calculation.pointA + ", Point B: " + calculation.pointB;
+
+          calculationHistoryList.appendChild(listItem);
+        }
+      }
+
+      function updateOutputLink() {
+        var outputLink = document.getElementById("outputLink");
+        var currentCalculation = calculationHistory[calculationHistory.length - 1];
+        var url = window.location.href.split("?")[0] + "?pointA=" + currentCalculation.pointA + "&pointB=" + currentCalculation.pointB;
+
+        outputLink.href = url;
+        outputLink.innerText = url;
+      }
+
+      function enableButtons() {
+        var visualizeButton = document.getElementById("visualizeButton");
+        var visualizeHistoryButton = document.getElementById("visualizeHistoryButton");
+        var zoomInButton = document.getElementById("zoomInButton");
+        var zoomOutButton = document.getElementById("zoomOutButton");
+
+        visualizeButton.disabled = false;
+        visualizeHistoryButton.disabled = false;
+        zoomInButton.disabled = false;
+        zoomOutButton.disabled = false;
+      }
+
+      function disableButtons() {
+        var visualizeButton = document.getElementById("visualizeButton");
+        var visualizeHistoryButton = document.getElementById("visualizeHistoryButton");
+        var zoomInButton = document.getElementById("zoomInButton");
+        var zoomOutButton = document.getElementById("zoomOutButton");
+
+        visualizeButton.disabled = true;
+        visualizeHistoryButton.disabled = true;
+        zoomInButton.disabled = true;
+        zoomOutButton.disabled = true;
+      }
+
+      function visualizeDistance() {
+        var currentCalculation = calculationHistory[calculationHistory.length - 1];
+        var pointALatLon = currentCalculation.pointA.split(",");
+        var pointBLatLon = currentCalculation.pointB.split(",");
+
+        var pointAGeometry = {
+          type: "point",
+          latitude: parseFloat(pointALatLon[0]),
+          longitude: parseFloat(pointALatLon[1])
+        };
+
+        var pointBGeometry = {
+          type: "point",
+          latitude: parseFloat(pointBLatLon[0]),
+          longitude: parseFloat(pointBLatLon[1])
+        };
+
+        addPointToMap(pointAGeometry, "Point A", "Latitude: " + pointALatLon[0] + "<br>Longitude: " + pointALatLon[1]);
+        addPointToMap(pointBGeometry, "Point B", "Latitude: " + pointBLatLon[0] + "<br>Longitude: " + pointBLatLon[1]);
+
+        view.goTo({
+          target: [
+            [pointAGeometry.longitude, pointAGeometry.latitude],
+            [pointBGeometry.longitude, pointBGeometry.latitude]
+          ],
+          zoom: 10
+        });
+
+        enableZoomButtons();
+      }
+
+      function visualizeHistory() {
+        graphicsLayer.removeAll();
+
+        for (var i = 0; i < calculationHistory.length; i++) {
+          var calculation = calculationHistory[i];
+          var pointALatLon = calculation.pointA.split(",");
+          var pointBLatLon = calculation.pointB.split(",");
+
+          var pointAGeometry = {
+            type: "point",
+            latitude: parseFloat(pointALatLon[0]),
+            longitude: parseFloat(pointALatLon[1])
+          };
+
+          var pointBGeometry = {
+            type: "point",
+            latitude: parseFloat(pointBLatLon[0]),
+            longitude: parseFloat(pointBLatLon[1])
+          };
+
+          addPointToMap(pointAGeometry, "Point A", "Latitude: " + pointALatLon[0] + "<br>Longitude: " + pointALatLon[1]);
+          addPointToMap(pointBGeometry, "Point B", "Latitude: " + pointBLatLon[0] + "<br>Longitude: " + pointBLatLon[1]);
+        }
+
+        view.goTo(graphicsLayer.graphics);
+        enableZoomButtons();
+      }
+
+      function enableZoomButtons() {
+        var zoomInButton = document.getElementById("zoomInButton");
+        var zoomOutButton = document.getElementById("zoomOutButton");
+
+        zoomInButton.disabled = false;
+        zoomOutButton.disabled = false;
+      }
+
+      function zoomIn() {
+        view.zoom += 1;
+      }
+
+      function zoomOut() {
+        view.zoom -= 1;
+      }
+
+      var calculateButton = document.getElementById("calculateButton");
+      var visualizeButton = document.getElementById("visualizeButton");
+      var visualizeHistoryButton = document.getElementById("visualizeHistoryButton");
+      var zoomInButton = document.getElementById("zoomInButton");
+      var zoomOutButton = document.getElementById("zoomOutButton");
+
+      calculateButton.addEventListener("click", calculateDistance);
+      visualizeButton.addEventListener("click", visualizeDistance);
+      visualizeHistoryButton.addEventListener("click", visualizeHistory);
+      zoomInButton.addEventListener("click", zoomIn);
+      zoomOutButton.addEventListener("click", zoomOut);
+    });
+  </script>
+</body>
+
+</html>
