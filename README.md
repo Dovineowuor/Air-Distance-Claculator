@@ -1,6 +1,6 @@
 # Air Distance Calculator
 
-The Air Distance Calculator is a simple Python program that calculates the distance between two locations on the Earth using their latitude and longitude coordinates. It utilizes the Haversine formula to accurately calculate the shortest distance between two points on a sphere.
+The Air Distance Calculator is a simple HTML/CSS/JS program that calculates the distance between two locations on the Earth using their latitude and longitude coordinates. It utilizes the Haversine formula to accurately calculate the shortest distance between two points on a sphere.
 
 ## Features
 
@@ -33,8 +33,7 @@ To run the Air Distance Calculator, make sure you have the following installed o
 3. Run the program:
 
    ```shell
-   python air_distance_calculator.py
-   ```
+   RUN YOUR PROGRAM ON LOCAHOST
 
 ## Usage
 
